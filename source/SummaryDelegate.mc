@@ -11,7 +11,6 @@ class SummaryDelegate extends WatchUi.BehaviorDelegate {
     function onSelect() as Boolean {
         getApp().saveSession();
         System.exit();
-        return true;
     }
 
     function onBack() as Boolean {
@@ -21,7 +20,6 @@ class SummaryDelegate extends WatchUi.BehaviorDelegate {
     function onMenu() as Boolean {
         getApp().saveSession();
         System.exit();
-        return true;
     }
 
     function onNextPage() as Boolean {
