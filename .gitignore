@@ -1,0 +1,9 @@
+# Build output
+bin/
+gen/
+mir/
+internal-mir/
+export/
+
+# Claude Code local settings
+.claude/settings.local.json
