@@ -8,28 +8,13 @@ For domain vocabulary, see `CONTEXT.md`. For the app spec, see `SPEC.md`. For pl
 
 ## High Priority Fix
 
-### GPS lock confirmation before starting
+### ~~GPS lock confirmation before starting~~ — Done (v0.2.0)
 
-**Problem:** The pre-session screen currently shows "Ready to surf? Press to start" with no GPS status. The user can start a session before the device has acquired a GPS fix, resulting in missing distance data at the beginning of the session.
+**What was built:** The pre-session screen now shows GPS status — **Searching** (gray), **Weak** (yellow), or **Good** (green) — updated live via `Position.enableLocationEvents`. Start is always available regardless of GPS state.
 
-**Root cause:** `Toybox.Positioning` is not available on the Venu 4S via Connect IQ (see constraints section below), so GPS quality cannot be checked before a session is started.
+**Implementation:** `PreSessionView.onShow()` registers a `Position.LOCATION_CONTINUOUS` listener. The callback maps `Position.Info.accuracy` to one of the three states and calls `requestUpdate()`. `onHide()` disables the listener. No recording session is created before the user presses start.
 
-**Workaround approach:**
-The `ActivityRecording.Session` supports `start()` and `pause()`. Once a session is started, `Activity.getActivityInfo().currentLocation` and `.gpsAccuracy` become available. The proposed implementation:
-
-1. On pre-session screen show, call `startSession()` immediately but also call `recordingSession.pause()` right after — recording is paused but GPS acquisition begins
-2. In `PreSessionView`, start a 1-second timer that polls `Activity.getActivityInfo().gpsAccuracy`
-3. Display GPS status based on accuracy: searching / weak / ready
-4. When quality reaches an acceptable threshold, enable the start button and show "Press to start"
-5. On button press, call `recordingSession.resume()` instead of `startSession()` — the session was already created, just resume it
-
-**Implications:**
-- `startSession()` on the app needs to be split into `createSession()` (creates + pauses) and `beginSession()` (resumes)
-- `sessionStartTime` should be set at `beginSession()` time, not `createSession()` time — elapsed time should reflect when the user pressed start, not when GPS acquisition began
-- The pre-session screen needs a 1-second timer (same pattern as `ActiveView`)
-- If the user never presses start and exits the app, the paused session must be discarded via `recordingSession.discard()`
-
-**Files to change:** `wave-trackApp.mc`, `wave-trackView.mc` (PreSessionView), `wave-trackDelegate.mc` (PreSessionDelegate)
+See the constraints section below for the full list of GPS APIs that do and don't work on the Venu 4S.
 
 ---
 
@@ -111,13 +96,23 @@ The countdown starts in `StopConfirmationView.onShow()`. Change `secondsRemainin
 
 ## Connect IQ Constraints Discovered During Build
 
-### `Toybox.Positioning` is not available on Venu 4S
+### GPS quality API: use `Toybox.Position`, not `Toybox.Positioning`
 
-The GPS API for direct location events (`Positioning.enableLocationEvents`) does not compile for `venu441mm`. GPS recording works fine — the `ActivityRecording` framework handles it internally — but there is no way to query GPS quality before starting a session.
+The correct module for reading GPS status is **`Toybox.Position`** (note: no `-ing`). The older `Toybox.Positioning` module does not compile for `venu441mm`.
 
-**Impact on v1:** the pre-session screen is a simple "Ready to surf?" prompt. There is no GPS lock indicator.
+The following do **not** work on this device and should not be attempted:
+- `Toybox.Positioning` — does not compile
+- `ActivityRecording.Session.pause()` / `.resume()` — not available
+- `Activity.getActivityInfo().gpsAccuracy` — field does not exist
+- `Activity.GPS_QUALITY_*` constants — not defined
 
-**Impact on v2:** if a GPS lock screen is wanted, the workaround is to start the `ActivityRecording.Session`, immediately pause it, poll `Activity.getActivityInfo().gpsAccuracy` until quality is acceptable, then resume on user input. This adds complexity but is achievable.
+What **does** work:
+- `Position.enableLocationEvents(Position.LOCATION_CONTINUOUS, method(:onPosition))` — registers a callback that fires on each GPS update
+- `Position.enableLocationEvents(Position.LOCATION_DISABLE, method(:onPosition))` — stops listening
+- The callback receives a `Position.Info` object; read `.accuracy` for one of: `Position.QUALITY_NOT_AVAILABLE`, `Position.QUALITY_LAST_KNOWN`, `Position.QUALITY_POOR`, `Position.QUALITY_USABLE`, `Position.QUALITY_GOOD`
+- Requires `<iq:uses-permission id="Positioning"/>` in `manifest.xml`
+
+This works independently of `ActivityRecording` — no session needs to exist.
 
 ### Valid `manifest.xml` permission IDs
 
@@ -128,7 +123,7 @@ Trial-and-error results for `venu441mm` with SDK 9.1.0:
 | `Activity` | No — rejected by manifest parser |
 | `HeartRate` | No — rejected by manifest parser |
 | `Sensor` | Not tested |
-| `Positioning` | Accepted by manifest, but module not available at compile time for this device |
+| `Positioning` | Yes — required for `Toybox.Position` (confirmed working via `Position.enableLocationEvents`) |
 | `Fit` | Yes — added by VS Code extension |
 
 ### `import Toybox.Lang` is required everywhere
@@ -196,21 +191,15 @@ Option B is more consistent with the rest of the app; Option A is faster and sim
 
 ---
 
-### Custom launcher icon
+### ~~Custom launcher icon~~ — Done (v0.2.0)
 
-**Problem:** The current launcher icon (`resources/drawables/launcher_icon.svg`) is the default skeleton placeholder at 24×24 pixels. The Venu 4S expects 54×54. It scales up but looks blurry and generic in the app list.
+`resources/drawables/launcher_icon.svg` has been replaced with a surf man with surfboard icon. The manifest wiring (`launcherIcon="@Drawables.LauncherIcon"` → `drawables.xml` → `launcher_icon.svg`) was already correct and required no changes.
 
-**What to do:** Replace `resources/drawables/launcher_icon.svg` with a custom wave icon. The manifest already wires this up correctly via `launcherIcon="@Drawables.LauncherIcon"` in `manifest.xml` and `drawables.xml` already maps `LauncherIcon` to `launcher_icon.svg` — so only the image file needs to change, no code changes required.
+---
 
-**Spec for the new icon:**
-- Format: SVG (current) or PNG
-- Size: 54×54 pixels (PNG) or designed at 54×54 viewport (SVG)
-- Background: transparent or black — will appear on the watch's dark app list
-- Design suggestion: a simple wave shape, white or light blue on black, minimal detail (small canvas)
+### ~~App name in Garmin Connect activity list~~ — Done (v0.2.0)
 
-**If using PNG instead of SVG:** update `drawables.xml` to point to the new filename — change `filename="launcher_icon.svg"` to `filename="launcher_icon.png"` (or whatever the new file is named).
-
-**Files to change:** `resources/drawables/launcher_icon.svg` (replace the file), optionally `resources/drawables/drawables.xml` if switching format
+The app appeared as "wave-track" in Garmin Connect's activity type list (alongside Running, Hiking, etc.). Fixed by updating `AppName` in `resources/strings/strings.xml` to `"Wave Track"`.
 
 ---
 
@@ -234,6 +223,5 @@ Per `SPEC.md` — these are explicitly deferred, not forgotten:
 
 - No wave count display
 - No HR display
-- No GPS lock indicator on pre-session screen (also a platform constraint — see above)
 - No gesture controls
 - No map display on watch
