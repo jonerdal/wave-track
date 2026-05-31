@@ -1,5 +1,6 @@
 import Toybox.Graphics;
 import Toybox.Lang;
+import Toybox.Position;
 import Toybox.System;
 import Toybox.Time;
 import Toybox.Timer;
@@ -18,6 +19,7 @@ class ActiveView extends WatchUi.View {
     }
 
     function onShow() as Void {
+        Position.enableLocationEvents(Position.LOCATION_CONTINUOUS, method(:onPosition));
         _timer = new Timer.Timer();
         _timer.start(method(:onTick), 1000, true);
     }
@@ -27,6 +29,11 @@ class ActiveView extends WatchUi.View {
             _timer.stop();
             _timer = null;
         }
+        // GPS stays on — session is still recording through StopConfirmation
+    }
+
+    function onPosition(info as Position.Info) as Void {
+        // ActivityRecording captures GPS data automatically; nothing to do here
     }
 
     function onTick() as Void {

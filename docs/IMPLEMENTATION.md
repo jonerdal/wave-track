@@ -1,41 +1,87 @@
 # WaveTrack — Implementation Notes
 
-This document captures decisions made during the v1 build that aren't in the spec or ADRs — the "why it's shaped this way" for anyone picking up the code to build the next version.
+Wave Track is a Garmin activity used for wave surfing.
+
+This document is the working project board. Open it at the start of each session to see what's pending, in progress, and done. It also captures the "why it's shaped this way" for decisions that aren't obvious from the code.
 
 For domain vocabulary, see `CONTEXT.md`. For the app spec, see `SPEC.md`. For platform research, see `docs/RESEARCH.md`.
 
 ---
 
-## High Priority Fix
+## Up Next
 
-### ~~GPS lock confirmation before starting~~ — Done (v0.2.0)
+### More stats on summary screen
 
-**What was built:** The pre-session screen now shows GPS status — **Searching** (gray), **Weak** (yellow), or **Good** (green) — updated live via `Position.enableLocationEvents`. Start is always available regardless of GPS state.
+**Problem:** Summary screen shows total time and distance. Max speed and other session stats are in the FIT file but not displayed.
 
-**Implementation:** `PreSessionView.onShow()` registers a `Position.LOCATION_CONTINUOUS` listener. The callback maps `Position.Info.accuracy` to one of the three states and calls `requestUpdate()`. `onHide()` disables the listener. No recording session is created before the user presses start.
+**What's available:** `Activity.getActivityInfo()` exposes these fields during an active session. Snapshot them in `stopSession()` alongside `elapsedDistance`, store on `wave_trackApp`, then display in `SummaryView.onUpdate()`.
 
-See the constraints section below for the full list of GPS APIs that do and don't work on the Venu 4S.
+Useful candidates:
+- `maxSpeed` — peak speed in m/s; convert to km/h for display (`* 3.6`)
+- `averageSpeed` — average speed in m/s
+
+**Files to change:** `wave_trackApp.mc` (snapshot fields in `stopSession()`), `SummaryView.mc` (display them)
 
 ---
 
-### Map display on the summary screen
+### Save or delete on summary screen
 
-**Problem:** The summary screen currently shows only total time and distance. There is no visual of the route taken during the session. The original v1 spec deferred this ("use Garmin Connect"), but it is now a priority.
+**Problem:** Summary screen only offers one action — save. No way to discard an accidental or GPS-poor session from the watch.
 
-**Confirmed available:** The Venu 4S supports map display — verified by the fact that the built-in SUP activity shows a map after a session. `WatchUi.MapView` should be available for `venu441mm`.
+**Proposed behaviour:** Two options: **Save** and **Delete**. Touch is acceptable here — session is over, screen is dry.
 
-**Implementation approach:**
+**Implementation options:**
 
-1. Replace `SummaryView` with a subclass of `WatchUi.MapView` instead of `WatchUi.View`
-2. After the session stops, pass the recorded track to the map view
-3. The SDK handles tile rendering and route drawing automatically
+- **Option A — Two touch targets:** Draw two labelled buttons (e.g. "Save" top half, "Delete" bottom half). Use `onTap()` in the delegate (requires switching from `BehaviorDelegate` to `InputDelegate` or adding a touch mixin).
+- **Option B — Physical button cycles, then confirms:** Single press cycles between Save and Delete (highlighted). Double press confirms. Consistent with the rest of the app.
 
-**Which screen(s)**
+Option B is more consistent; Option A is faster to implement.
 
-- Summary screen: route of the full session — highest priority
-- Active screen: live breadcrumb trail — lower priority, add after summary map works
+**Discard API:** `ActivityRecording.Session.discard()` — call instead of `save()`. Then `System.exit()` as normal.
 
 **Files to change:** `SummaryView.mc`, `SummaryDelegate.mc`
+
+---
+
+### "Double tap to stop" hint on single press
+
+**Problem:** A single press on the active screen does nothing and gives no feedback. Easy to forget the double press gesture mid-session.
+
+**Proposed behaviour:** On the first press of a potential double press (inside `ActiveDelegate.onSelect()` when `_waitingForSecondPress` is false), briefly show a hint. It disappears after the 400ms window expires.
+
+**Implementation sketch:**
+- Add a `showStopHint as Boolean` field to `ActiveView`
+- In `ActiveDelegate.onSelect()` (first press path), set the flag and call `WatchUi.requestUpdate()`
+- In `ActiveView.onUpdate()`, if the flag is set, draw a small hint label (e.g. "Double press to stop") in a subtle colour
+- In `ActiveDelegate.onWindowExpired()`, clear the flag and call `WatchUi.requestUpdate()`
+
+**Files to change:** `ActiveDelegate.mc`, `ActiveView.mc`
+
+---
+
+### Timer update frequency and battery usage
+
+**Investigation needed:** Test a full-length (~2h) session on device. The Venu 4S rated GPS battery life is ~20 hours so this is likely a non-issue, but worth confirming once before closing.
+
+**If reducing frequency is worthwhile:** change `1000` to `5000` (ms) in `_timer.start(method(:onTick), 1000, true)` in `ActiveView.onShow()`. Updates every 5 seconds instead of every second — less smooth but readable.
+
+**Files to change:** `ActiveView.mc`
+
+---
+
+## Future (v2+)
+
+### Wave detection (v2)
+
+Use accelerometer/gyroscope via `Toybox.Sensor`. Entry point: `Sensor.setEnabledSensors()` + `Sensor.enableSensorEvents()` in `ActiveView.onShow()`. Wave count would live on `wave_trackApp` and display on the active screen. The `Sensor` permission may need to be added to `manifest.xml`.
+
+### Heart rate on active screen (v2)
+
+HR is already recorded by the activity. To display it: read `Activity.getActivityInfo().heartRate` inside `ActiveView.onUpdate()`. No permission changes needed.
+
+### Gesture-based stop (v3)
+
+Replace or supplement double press with an arm-rotation gesture. Implementation via `Toybox.Sensor` gyroscope, pattern-matching against a defined sequence.
 
 ---
 
@@ -74,7 +120,7 @@ wave_trackApp  ← session state (recordingSession, sessionStartTime, sessionEnd
 
 The stop trigger is a double press of the action button (400ms window), not a long press. Long press was the original design but the simulator has no reliable way to test it. On device, revisit whether long press (`onMenu()`) would feel more natural — the infrastructure is already stubbed in both delegates.
 
-To change the window: `_doublePressTimer.start(method(:onWindowExpired), 400, false)` in `ActiveDelegate.mc` and `StopConfirmationDelegate.mc`. Increase `400` to widen the window.
+To change the window: `_doublePressTimer.start(method(:onWindowExpired), 400, false)` in `ActiveDelegate.mc` and `StopConfirmationDelegate.mc`.
 
 ### Stop confirmation auto-cancel: 5 seconds
 
@@ -82,11 +128,11 @@ The countdown starts in `StopConfirmationView.onShow()`. Change `secondsRemainin
 
 ### Distance captured at stop time
 
-`Activity.getActivityInfo().elapsedDistance` is read inside `stopSession()` and stored in `sessionDistanceMeters`. It is not re-read on the summary screen. This is intentional — the value is snapshotted the moment recording stops so the summary screen always shows the final number regardless of when it renders.
+`Activity.getActivityInfo().elapsedDistance` is read inside `stopSession()` and stored in `sessionDistanceMeters`. Not re-read on the summary screen — snapshotted at the moment recording stops so the value is stable regardless of when the screen renders.
 
 ### Session name from start time, not stop time
 
-`buildSessionName()` reads `System.getClockTime().hour` inside `startSession()`. The name reflects when you paddled out, not when you finished. Stored in `sessionName` on the app.
+`buildSessionName()` reads `System.getClockTime().hour` inside `startSession()`. The name reflects when you paddled out, not when you finished.
 
 ### Activity recording requires no permission declaration
 
@@ -98,21 +144,25 @@ The countdown starts in `StopConfirmationView.onShow()`. Change `secondsRemainin
 
 ### GPS quality API: use `Toybox.Position`, not `Toybox.Positioning`
 
-The correct module for reading GPS status is **`Toybox.Position`** (note: no `-ing`). The older `Toybox.Positioning` module does not compile for `venu441mm`.
+The correct module is **`Toybox.Position`** (no `-ing`). `Toybox.Positioning` does not compile for `venu441mm`.
 
-The following do **not** work on this device and should not be attempted:
+The following do **not** work on this device:
 - `Toybox.Positioning` — does not compile
 - `ActivityRecording.Session.pause()` / `.resume()` — not available
 - `Activity.getActivityInfo().gpsAccuracy` — field does not exist
 - `Activity.GPS_QUALITY_*` constants — not defined
 
 What **does** work:
-- `Position.enableLocationEvents(Position.LOCATION_CONTINUOUS, method(:onPosition))` — registers a callback that fires on each GPS update
-- `Position.enableLocationEvents(Position.LOCATION_DISABLE, method(:onPosition))` — stops listening
-- The callback receives a `Position.Info` object; read `.accuracy` for one of: `Position.QUALITY_NOT_AVAILABLE`, `Position.QUALITY_LAST_KNOWN`, `Position.QUALITY_POOR`, `Position.QUALITY_USABLE`, `Position.QUALITY_GOOD`
+- `Position.enableLocationEvents(Position.LOCATION_CONTINUOUS, method(:onPosition))` — starts GPS updates
+- `Position.enableLocationEvents(Position.LOCATION_DISABLE, method(:onPosition))` — stops GPS
+- Callback receives `Position.Info`; read `.accuracy` for: `QUALITY_NOT_AVAILABLE`, `QUALITY_LAST_KNOWN`, `QUALITY_POOR`, `QUALITY_USABLE`, `QUALITY_GOOD`
 - Requires `<iq:uses-permission id="Positioning"/>` in `manifest.xml`
 
-This works independently of `ActivityRecording` — no session needs to exist.
+### `ActivityRecording` does not automatically enable GPS
+
+`ActivityRecording.Session.start()` records data to the FIT file but does **not** turn on GPS. GPS must be explicitly enabled via `Position.enableLocationEvents` for track data to appear. If GPS events are disabled during the session, the FIT file is saved with no track — no map in Garmin Connect, distance reads as 0.
+
+See ADR 0002 for the GPS lifecycle decision.
 
 ### Valid `manifest.xml` permission IDs
 
@@ -123,7 +173,7 @@ Trial-and-error results for `venu441mm` with SDK 9.1.0:
 | `Activity` | No — rejected by manifest parser |
 | `HeartRate` | No — rejected by manifest parser |
 | `Sensor` | Not tested |
-| `Positioning` | Yes — required for `Toybox.Position` (confirmed working via `Position.enableLocationEvents`) |
+| `Positioning` | Yes — required for `Toybox.Position` |
 | `Fit` | Yes — added by VS Code extension |
 
 ### `import Toybox.Lang` is required everywhere
@@ -132,96 +182,20 @@ Trial-and-error results for `venu441mm` with SDK 9.1.0:
 
 ---
 
-## Hooks for Future Versions
+## Done
 
-### Wave detection (v2)
+### GPS track recording + Garmin Connect map (v0.2.1)
 
-Wave detection will use accelerometer and/or gyroscope data. The `Toybox.Sensor` module provides this. Entry point: a listener registered via `Sensor.setEnabledSensors()` and `Sensor.enableSensorEvents()`.
+GPS was disabled at session start — `PreSessionView.onHide()` called `LOCATION_DISABLE` before `ActiveView` appeared, and nothing re-enabled it. All sessions were saved with no track data. Fixed by enabling GPS in `ActiveView.onShow()` and disabling in `stopSession()`. Distance on the summary screen (which was always 0.0 km) also fixed as a side effect.
 
-The natural place to add this is in `ActiveView.onShow()` alongside the existing 1-second timer. Wave count would be a field on `wave_trackApp` (e.g. `waveCount as Number`), incremented by the detection logic and displayed on the active screen.
+### GPS lock display on pre-session screen (v0.2.0)
 
-The `Sensor` permission may need to be added to `manifest.xml` when this is built.
+Pre-session screen shows GPS status — **Searching** (gray), **Weak** (yellow), or **Good** (green) — updated live via `Position.enableLocationEvents`. Start is always available regardless of GPS state.
 
-### Heart rate on active screen (v2)
+### Custom launcher icon (v0.2.0)
 
-HR is already recorded as part of the activity. To display it, read `Activity.getActivityInfo().heartRate` inside `ActiveView.onUpdate()`. No permission changes needed — HR is available from the activity info object during an active session.
+`resources/drawables/launcher_icon.svg` replaced with a surf man with surfboard icon.
 
-### Gesture-based stop (v3)
+### App name in Garmin Connect (v0.2.0)
 
-The spec notes a future arm-rotation gesture for stop. This would replace or supplement the double press. Implementation would use the `Sensor` module to detect orientation changes via gyroscope, pattern-matching against a defined gesture sequence.
-
----
-
-## Planned UX Improvements
-
-### "Double tap to stop" hint on single press
-
-**Problem:** On the active screen, a single press does nothing and gives no feedback. First-time users (or the user after a long session with cold hands) may not remember the double press gesture.
-
-**Proposed behaviour:** When the first press of a potential double press is detected — i.e. inside `ActiveDelegate.onSelect()` when `_waitingForSecondPress` is false — briefly show a hint on screen. The hint disappears after the 400ms double press window expires.
-
-**Implementation sketch:**
-- Add a `showStopHint as Boolean` field to `ActiveView` (or `wave_trackApp`)
-- In `ActiveDelegate.onSelect()` (first press path), set the flag and call `WatchUi.requestUpdate()`
-- In `ActiveView.onUpdate()`, if the flag is set, draw a small hint label (e.g. "Double press to stop") in a subtle colour
-- In `ActiveDelegate.onWindowExpired()`, clear the flag and call `WatchUi.requestUpdate()` to remove the hint
-
-The hint only needs to be visible for ~400ms so it will naturally disappear as part of the existing double press timeout logic.
-
-**Files to change:** `ActiveDelegate.mc`, `ActiveView.mc`
-
----
-
-### Save or delete on summary screen
-
-**Problem:** Currently the summary screen only offers one action — save. If the user ended the session accidentally or the GPS data is bad, there is no way to discard the session from the watch.
-
-**Proposed behaviour:** The summary screen offers two options: **Save** and **Delete**. Since the session is already over and the screen is not subject to wet-hand interaction, touch input is acceptable here.
-
-**Implementation options:**
-
-- **Option A — Two touch targets:** Draw two labelled buttons on screen (e.g. "Save" top half, "Delete" bottom half). Use `onTap()` in the delegate (requires switching from `BehaviorDelegate` to `InputDelegate` or adding a touch mixin) to detect which half was tapped.
-- **Option B — Physical button cycles, then confirms:** Single press cycles between Save (highlighted) and Delete (highlighted). Double press confirms the selected option. Keeps the button-only pattern consistent with the rest of the app.
-
-Option B is more consistent with the rest of the app; Option A is faster and simpler to implement given that touch is explicitly allowed on this screen.
-
-**Discard API:** `ActivityRecording.Session.discard()` — call this instead of `save()` when delete is confirmed. After discarding, call `System.exit()` as normal.
-
-**Files to change:** `SummaryView.mc`, `SummaryDelegate.mc`
-
----
-
-### ~~Custom launcher icon~~ — Done (v0.2.0)
-
-`resources/drawables/launcher_icon.svg` has been replaced with a surf man with surfboard icon. The manifest wiring (`launcherIcon="@Drawables.LauncherIcon"` → `drawables.xml` → `launcher_icon.svg`) was already correct and required no changes.
-
----
-
-### ~~App name in Garmin Connect activity list~~ — Done (v0.2.0)
-
-The app appeared as "wave-track" in Garmin Connect's activity type list (alongside Running, Hiking, etc.). Fixed by updating `AppName` in `resources/strings/strings.xml` to `"Wave Track"`.
-
----
-
-### Timer update frequency and battery usage
-
-**Problem:** `ActiveView` redraws every second via a `Timer.Timer`. Whether this meaningfully affects battery life on a 2-hour surf session is unknown.
-
-**Investigation needed:** Test a full-length session on the physical watch with 1-second updates, then compare battery drain against the device's stated battery life for GPS activities. The Venu 4S has a rated GPS battery life of around 20 hours, so a 2-hour session should be well within budget regardless — but this is worth confirming before tuning.
-
-**If reducing frequency is worthwhile:** change the timer interval from `1000` to `5000` (ms) in `ActiveView.onShow()`. The elapsed time display will update in 5-second steps rather than per-second ticks, which is visually less smooth but perfectly readable.
-
-**Trade-off:** A 1-second timer that only calls `requestUpdate()` is lightweight — it wakes the CPU briefly, redraws the screen, then sleeps. On AMOLED displays, the bigger battery cost is screen brightness and how many pixels are lit, not the redraw frequency. Reducing to 5 seconds is unlikely to make a material difference but is a trivial change if testing shows otherwise.
-
-**Files to change:** `ActiveView.mc` — the `1000` in `_timer.start(method(:onTick), 1000, true)`
-
----
-
-## What Was Not Built in v1
-
-Per `SPEC.md` — these are explicitly deferred, not forgotten:
-
-- No wave count display
-- No HR display
-- No gesture controls
-- No map display on watch
+App appeared as "wave-track" in Garmin Connect. Fixed by updating `AppName` in `resources/strings/strings.xml` to `"Wave Track"`.

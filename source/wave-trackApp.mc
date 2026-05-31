@@ -2,6 +2,7 @@ import Toybox.Activity;
 import Toybox.ActivityRecording;
 import Toybox.Application;
 import Toybox.Lang;
+import Toybox.Position;
 import Toybox.System;
 import Toybox.Time;
 import Toybox.WatchUi;
@@ -42,6 +43,7 @@ class wave_trackApp extends Application.AppBase {
     function stopSession() as Void {
         if (recordingSession != null) {
             recordingSession.stop();
+            Position.enableLocationEvents(Position.LOCATION_DISABLE, method(:onPosition));
             sessionEndTime = Time.now();
             var info = Activity.getActivityInfo();
             if (info != null && info.elapsedDistance != null) {
@@ -49,6 +51,8 @@ class wave_trackApp extends Application.AppBase {
             }
         }
     }
+
+    function onPosition(info as Position.Info) as Void {}
 
     function saveSession() as Void {
         if (recordingSession != null) {
