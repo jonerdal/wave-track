@@ -4,13 +4,13 @@ A wave surfing activity app for the Garmin Venu 4S, built with Connect IQ (Monke
 
 ## The problem
 
-The Venu 4S has no native surfing activity. The workaround — starting a SUP session and manually renaming it to "Surfing" in Garmin Connect and Strava after every session — gets old fast. WaveTrack eliminates that. Start the app, surf, stop. The activity saves as `SPORT_SURFING` and flows correctly to Garmin Connect and Strava with no post-session edits.
+The Venu 4S has no native surfing activity. The workaround, starting a SUP session and manually renaming it to "Surfing" in Garmin Connect and Strava after every session, gets old fast. WaveTrack eliminates that. Start the app, surf, stop. The activity saves as `SPORT_SURFING` and flows correctly to Garmin Connect and Strava with no post-session edits.
 
 ## What it does
 
 - Records sessions as `SPORT_SURFING` with GPS tracking
 - Auto-names the activity by time of day: Morning / Afternoon / Evening Surf
-- Button-only interaction — no touch (screen is wet, hands are wet)
+- Button-only interaction, no touch (screen is wet, hands are wet)
 - Double press the action button to stop; 5-second confirmation countdown
 - Summary screen shows total time and distance before saving
 
