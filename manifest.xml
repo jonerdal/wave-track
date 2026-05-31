@@ -28,7 +28,7 @@
             palette to edit your compatible language list.
         -->
         <iq:languages>
-            <iq:language id="eng"/>
+            <iq:language>eng</iq:language>
         </iq:languages>
         <!--
             Use "Monkey C: Configure Monkey Barrel" from the Visual Studio Code
