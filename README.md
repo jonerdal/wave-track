@@ -11,7 +11,7 @@ The Venu 4S has no native surfing activity. The workaround, starting a SUP sessi
 - Records sessions as `SPORT_SURFING` with GPS tracking
 - Auto-names the activity by time of day: Morning / Afternoon / Evening Surf
 - Button-only interaction, no touch (screen is wet, hands are wet)
-- Double press the action button to stop; 5-second confirmation countdown
+- Double press the action button to stop
 - Summary screen shows total time and distance before saving
 
 ## Requirements
@@ -31,14 +31,16 @@ Compiled output: `bin/wavetrack.prg`
 
 ## Running in the simulator
 
-1. Launch the Venu 4S simulator
-2. `Ctrl+Shift+P → Monkey C: Run in Simulator`
+Press **F5** in VS Code. This builds and launches the app in the Venu 4S simulator in one step.
 
-In the simulator, single-click the action button for a short press. To trigger a double press, click twice quickly.
+## Deploying to the watch
 
-## Sideloading to the watch
+1. `Ctrl+Shift+P → Monkey C: Export Project` — builds a signed `.iq` package
+2. Transfer the `.iq` file to your phone and open it with the Garmin Connect app — it installs directly to the paired watch over Bluetooth
 
-Transfer `bin/wavetrack.prg` to your phone and open it with the Garmin Connect app — it installs directly to the paired watch over Bluetooth. Alternatively, copy the `.prg` to `GARMIN/Apps/` on the watch via USB.
+## Deploying to Garmin IQ store
+
+The app is deployed as a beta version application in Garmin Store. Use the file from the export.
 
 ## Documentation
 

@@ -10,6 +10,16 @@ For domain vocabulary, see `CONTEXT.md`. For the app spec, see `docs/SPEC.md`. F
 
 ## Up Next
 
+### Show app version on pre-session screen
+
+**Problem:** No way to tell which version is installed on the watch without checking Garmin Connect.
+
+**What to do:** Read the version from `Toybox.System.getDeviceSettings().monkeyVersion` or from the app properties, and draw it in small text on `PreSessionView`.
+
+**Files to change:** `PreSessionView.mc` (or `wave-trackView.mc` if that's the pre-session view entry point)
+
+---
+
 ### Fix summary screen layout
 
 **Problem:** Label text (e.g. "TOTAL TIME", "DISTANCE") is too small and the data values are too large, making the screen feel unbalanced.
