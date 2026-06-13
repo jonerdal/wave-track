@@ -53,6 +53,9 @@ class PreSessionView extends WatchUi.View {
 
         dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
         dc.drawText(cx, cy + 30, Graphics.FONT_SMALL, "Press to start", Graphics.TEXT_JUSTIFY_CENTER);
+
+        dc.setColor(Graphics.COLOR_DK_GRAY, Graphics.COLOR_TRANSPARENT);
+        dc.drawText(cx, dc.getHeight() - 30, Graphics.FONT_TINY, "v" + VERSION, Graphics.TEXT_JUSTIFY_CENTER);
     }
 
 }

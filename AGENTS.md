@@ -2,6 +2,10 @@
 
 WaveTrack is a Garmin Connect IQ watch app for the Venu 4S that records surf sessions as `SPORT_SURFING` activities.
 
+## Start of session
+
+Open `docs/IMPLEMENTATION.md` first. It is the working project board — read the **Investigate / Revisit** and **Up Next** sections to understand what to work on and what is already under consideration.
+
 ## Docs
 
 - `README.md` — project overview, build instructions, and how to run in the simulator or sideload to the watch.
@@ -14,6 +18,10 @@ WaveTrack is a Garmin Connect IQ watch app for the Venu 4S that records surf ses
 ## Source
 
 All app code is in `source/`. Each screen is a `*View.mc` + `*Delegate.mc` pair. Shared session state lives in `wave-trackApp.mc` and is accessed everywhere via `getApp()`.
+
+## Version
+
+The app version is defined in `source/constants.mc` (`VERSION as String`). This is the single source of truth — update it there, and also update the matching `version` attribute in `manifest.xml`.
 
 ## Key constraints
 

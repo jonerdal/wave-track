@@ -8,17 +8,17 @@ For domain vocabulary, see `CONTEXT.md`. For the app spec, see `docs/SPEC.md`. F
 
 ---
 
-## Up Next
+## Investigate / Revisit
 
-### Show app version on pre-session screen
+### Stop flow: double-press direct vs. single-press confirmation step
 
-**Problem:** No way to tell which version is installed on the watch without checking Garmin Connect.
+Currently a double-press on the action button stops the session immediately and goes straight to Summary. An alternative: single press opens a "Stop session?" confirmation screen, double-press there confirms and saves, back button returns to the active recording.
 
-**What to do:** Read the version from `Toybox.System.getDeviceSettings().monkeyVersion` or from the app properties, and draw it in small text on `PreSessionView`.
-
-**Files to change:** `PreSessionView.mc` (or `wave-trackView.mc` if that's the pre-session view entry point)
+Trade-off: the current flow is fast but irreversible mid-press. The confirmation step adds safety but an extra screen. Worth revisiting once there's more real-world usage to know whether accidental stops are actually a problem.
 
 ---
+
+## Up Next
 
 ### Fix summary screen layout
 
@@ -164,6 +164,12 @@ Trial-and-error results for `venu441mm` with SDK 9.1.0:
 ---
 
 ## Done
+
+### Show app version on pre-session screen (v0.3.0)
+
+`source/constants.mc` holds `VERSION as String`. `wave-trackView.mc` draws it as `"v" + VERSION` in `FONT_TINY`, `COLOR_DK_GRAY` at the bottom of the pre-session screen. When bumping the version, update `constants.mc` and `manifest.xml`.
+
+---
 
 ### "Double press to stop" hint on single press
 
