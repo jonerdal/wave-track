@@ -26,5 +26,5 @@ The app version is defined in `source/constants.mc` (`VERSION as String`). This 
 ## Key constraints
 
 - Physical buttons only — no touch interaction.
-- Target device: Garmin Venu 4S (`venu441mm`), SDK 9.1.0.
+- Target device: Garmin Venu 4S (`venu441mm`), SDK 9.1.0. Two physical buttons on the right side of the case: upper = select/save, lower = back/discard.
 - Use `Toybox.Position` (not `Toybox.Positioning`) for GPS.

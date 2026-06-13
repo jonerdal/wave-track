@@ -20,13 +20,19 @@ Trade-off: the current flow is fast but irreversible mid-press. The confirmation
 
 ## Up Next
 
-### Fix summary screen layout
+### Summary screen — replace drawn icons with SVG bitmaps
 
-**Problem:** Label text (e.g. "TOTAL TIME", "DISTANCE") is too small and the data values are too large, making the screen feel unbalanced.
-
-**What to do:** Adjust font sizes in `SummaryView.onUpdate()` — bump the label font up and reduce the data field font down until the hierarchy feels readable.
+Button-hint icons (green checkmark for save, red bin for discard) are currently drawn programmatically with `setPenWidth` / `drawLine`. The intended approach is to load them from SVG bitmap assets via `WatchUi.loadResource()` / `dc.drawBitmap()`. SVG files (`check_icon.svg`, `bin_icon.svg`, 30×30px) already exist in `resources/drawables/` and are registered in `drawables.xml`. Blocked on resolving the correct Monkey C type for the loaded resource — previous attempts with `BitmapResource?` type annotations failed silently.
 
 **Files to change:** `SummaryView.mc`
+
+---
+
+### Summary screen — research Garmin watch face layout patterns
+
+The summary screen layout is manually positioned with hardcoded percentage offsets. Before adding more stats (wave count, max speed, etc.), research how Garmin Connect IQ watch face apps handle dynamic, multi-field layouts — grid systems, font metrics, `dc.getFontHeight()`, and any layout utilities available in the SDK.
+
+**Starting point:** `docs/RESEARCH.md`, Garmin Connect IQ SDK docs.
 
 ---
 
@@ -164,6 +170,22 @@ Trial-and-error results for `venu441mm` with SDK 9.1.0:
 ---
 
 ## Done
+
+### Summary screen layout redesign
+
+Two-section layout: "Session Complete" header separated from stats by a horizontal divider line. Time value downsized from `FONT_NUMBER_HOT` to `FONT_MEDIUM`; distance from `FONT_NUMBER_MEDIUM` to `FONT_SMALL`. All positions use `dc.getWidth()` / `dc.getHeight()` percentages — no hardcoded pixel coords. Button-hint icons (green checkmark for save, red bin for discard) drawn programmatically on the right edge, tuned for Venu 4S button positions. "Press to save" hint text removed.
+
+**Files changed:** `SummaryView.mc`
+
+---
+
+### Disable touch on summary screen
+
+Tapping the summary screen was triggering `onSelect()` and saving the session unintentionally. `BehaviorDelegate` automatically maps screen taps to `onSelect` on touch-capable devices — overriding `onTap` does not prevent this. Fix: switched `SummaryDelegate` to extend `WatchUi.InputDelegate` instead of `WatchUi.BehaviorDelegate`. Physical buttons are wired manually via `onKey` (`KEY_ENTER` → save, `KEY_ESC` → discard confirmation). Touch events are never mapped to actions. Consistent with ADR 0001 (button-only interaction).
+
+**Files changed:** `SummaryDelegate.mc`
+
+---
 
 ### Show app version on pre-session screen (v0.3.0)
 
