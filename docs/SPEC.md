@@ -23,9 +23,9 @@ WaveTrack eliminates that manual cleanup. Start the app, surf, stop — the acti
 
 ### 1. Pre-session screen
 
-- Displays GPS lock status
-- User cannot start until GPS is acquired
-- Button press starts the session once GPS is locked
+- Displays GPS lock status (Searching / Weak / Good)
+- Start is always available — GPS lock is not required
+- Button press starts the session
 
 ### 2. Active screen
 
@@ -41,8 +41,8 @@ Two pieces of information, nothing else:
 ### 3. Stopping the session
 
 - Button-only interaction — no touch. Screen is wet, fingers are wet, gloves may be on.
-- Hold button to trigger stop
-- Confirmation step to prevent accidental stops (simple — to be tuned after real-water testing)
+- Double press the action button to stop (400ms window between presses)
+- No confirmation step — double press is considered sufficient confirmation
 - **Future:** Gesture-based stop (e.g. arm rotation sequence)
 
 ### 4. End-of-session summary screen

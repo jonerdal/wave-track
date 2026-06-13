@@ -120,6 +120,12 @@ Device support is declared per-device in `manifest.xml` — not a blanket "suppo
 
 ---
 
+## Timer limit: 2 concurrent timers on Venu 4S
+
+The Venu 4S enforces a hard cap on simultaneous `Timer.Timer` instances. Exceeding it throws `Too Many Timers Error` at runtime. With `ActiveView._timer` (1s tick) already running, only one additional timer can be active at a time in `ActiveDelegate`. Work around this by reusing a single timer across sequential phases rather than allocating a second one.
+
+---
+
 ## Key Constraints Summary
 
 | Constraint | Impact |
@@ -129,6 +135,7 @@ Device support is declared per-device in `manifest.xml` — not a blanket "suppo
 | No native surfing activity on device | Solved via custom Connect IQ activity app |
 | Simulator cannot replicate real sensor data | Physical ocean testing required for sensor-dependent features |
 | Device manifest must list each target explicitly | Start with Venu 4S only |
+| Max ~2 concurrent timers on Venu 4S | Sequential timer reuse required when multiple timed events overlap |
 
 ---
 

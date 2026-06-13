@@ -9,7 +9,8 @@ class PreSessionDelegate extends WatchUi.BehaviorDelegate {
 
     function onSelect() as Boolean {
         getApp().startSession();
-        WatchUi.switchToView(new ActiveView(), new ActiveDelegate(), WatchUi.SLIDE_LEFT);
+        var activeView = new ActiveView();
+        WatchUi.switchToView(activeView, new ActiveDelegate(activeView), WatchUi.SLIDE_LEFT);
         return true;
     }
 

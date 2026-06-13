@@ -34,22 +34,6 @@ Useful candidates:
 
 ---
 
-### "Double tap to stop" hint on single press
-
-**Problem:** A single press on the active screen does nothing and gives no feedback. Easy to forget the double press gesture mid-session.
-
-**Proposed behaviour:** On the first press of a potential double press (inside `ActiveDelegate.onSelect()` when `_waitingForSecondPress` is false), briefly show a hint. It disappears after the 400ms window expires.
-
-**Implementation sketch:**
-- Add a `showStopHint as Boolean` field to `ActiveView`
-- In `ActiveDelegate.onSelect()` (first press path), set the flag and call `WatchUi.requestUpdate()`
-- In `ActiveView.onUpdate()`, if the flag is set, draw a small hint label (e.g. "Double press to stop") in a subtle colour
-- In `ActiveDelegate.onWindowExpired()`, clear the flag and call `WatchUi.requestUpdate()`
-
-**Files to change:** `ActiveDelegate.mc`, `ActiveView.mc`
-
----
-
 ### Timer update frequency and battery usage
 
 **Investigation needed:** Test a full-length (~2h) session on device. The Venu 4S rated GPS battery life is ~20 hours so this is likely a non-issue, but worth confirming once before closing.
@@ -87,7 +71,6 @@ wave_trackApp  ← session state (recordingSession, sessionStartTime, sessionEnd
     │
     ├── PreSessionView   + PreSessionDelegate    (pre-session screen)
     ├── ActiveView       + ActiveDelegate         (active recording screen)
-    ├── StopConfirmationView + StopConfirmationDelegate  (stop flow)
     └── SummaryView      + SummaryDelegate        (post-session summary)
 ```
 
@@ -96,15 +79,11 @@ wave_trackApp  ← session state (recordingSession, sessionStartTime, sessionEnd
 | From | To | Method | Reason |
 |---|---|---|---|
 | Pre-session | Active | `switchToView` | No going back after starting |
-| Active | Stop confirmation | `switchToView` | Prevents ActiveView sitting under Summary with no clean removal path |
-| Stop confirmation (cancel) | Active | `switchToView` | Recreates ActiveView; safe because elapsed time recalculates from stored `sessionStartTime` |
-| Stop confirmation (confirm) | Summary | `switchToView` | Clean stack, no path back to a stopped session |
+| Active | Summary | `switchToView` | Double press stops session and goes directly to Summary |
 | Summary | Discard confirmation | `switchToView` | Back button triggers discard flow |
 | Discard confirmation (cancel) | Summary | `switchToView` | User changed their mind |
 | Discard confirmation (confirm) | Exit | `System.exit()` | Terminates app after discard |
 | Summary | Exit | `System.exit()` | Terminates app after save |
-
-`pushView` was considered for Active → Stop confirmation (free back-button cancel) but rejected — the Venu 4S back button exits the app by default, and the view stack cleanup on confirm was non-trivial.
 
 ---
 
@@ -112,13 +91,11 @@ wave_trackApp  ← session state (recordingSession, sessionStartTime, sessionEnd
 
 ### Double press to stop
 
-The stop trigger is a double press of the action button (400ms window), not a long press. Long press was the original design but the simulator has no reliable way to test it. On device, revisit whether long press (`onMenu()`) would feel more natural — the infrastructure is already stubbed in both delegates.
+The stop trigger is a double press of the action button (400ms window), not a long press. Long press was the original design but the simulator has no reliable way to test it. On device, revisit whether long press (`onMenu()`) would feel more natural — `onMenu()` is already stubbed in `ActiveDelegate`.
 
-To change the window: `_doublePressTimer.start(method(:onWindowExpired), 400, false)` in `ActiveDelegate.mc` and `StopConfirmationDelegate.mc`.
+Double press goes directly to Summary — there is no intermediate confirmation screen. The double press itself is considered sufficient confirmation.
 
-### Stop confirmation auto-cancel: 5 seconds
-
-The countdown starts in `StopConfirmationView.onShow()`. Change `secondsRemaining = 5` at the top of `StopConfirmationView.mc` to tune this.
+To change the window: `_doublePressTimer.start(method(:onWindowExpired), 400, false)` in `ActiveDelegate.mc`.
 
 ### Distance captured at stop time
 
@@ -177,6 +154,12 @@ Trial-and-error results for `venu441mm` with SDK 9.1.0:
 ---
 
 ## Done
+
+### "Double press to stop" hint on single press
+
+On the first press, `ActiveDelegate` sets `showStopHint = true` on `ActiveView` and starts a 2000ms hint timer (separate from the 400ms double-press window). `ActiveView.onUpdate()` draws "Double press to stop" in `COLOR_DK_GRAY` at the bottom of the screen while the flag is set. The hint timer clears the flag after 1.5s. If the second press fires first, `cancelHint()` clears it immediately before transitioning. `ActiveView` is constructed first at each callsite and passed into `ActiveDelegate` so the delegate can reach the flag directly.
+
+---
 
 ### Discard activity from summary screen
 

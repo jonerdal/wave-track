@@ -13,5 +13,5 @@ The app is used while surfing — screen is wet, hands are wet, gloves may be wo
 ## Consequences
 
 - Every screen's `InputDelegate` ignores touch events
-- All flows are designed around short press and long press only
-- Stop confirmation uses a long-press-to-confirm pattern (not a touch target)
+- All flows are designed around single press and double press only
+- Stop is triggered by a double press of the action button — no confirmation screen

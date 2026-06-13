@@ -12,7 +12,7 @@ GPS (`Position.enableLocationEvents`) is enabled in `ActiveView.onShow()` and di
 
 Enabling GPS in `startSession()` was considered but rejected: `PreSessionView.onHide()` fires during the view transition immediately after `startSession()` is called, and it calls `LOCATION_DISABLE` — which would undo the enable before `ActiveView` ever appears. The view lifecycle ordering makes `startSession()` the wrong place.
 
-Enabling in `ActiveView.onShow()` fires after `PreSessionView.onHide()`, so the ordering is safe. GPS stays on through `StopConfirmationView` (no disable in `ActiveView.onHide()`) because the session is still recording during those ~5 seconds.
+Enabling in `ActiveView.onShow()` fires after `PreSessionView.onHide()`, so the ordering is safe. GPS stays on through the transition to `SummaryView` (no disable in `ActiveView.onHide()`) because the session is still recording until `stopSession()` is called.
 
 ## Consequences
 

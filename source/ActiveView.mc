@@ -8,6 +8,7 @@ import Toybox.WatchUi;
 
 class ActiveView extends WatchUi.View {
 
+    var showStopHint as Boolean = false;
     private var _timer as Timer.Timer?;
 
     function initialize() {
@@ -57,6 +58,11 @@ class ActiveView extends WatchUi.View {
         // Current time of day — smaller, below
         dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
         dc.drawText(cx, 255, Graphics.FONT_MEDIUM, currentTime(), Graphics.TEXT_JUSTIFY_CENTER);
+
+        if (showStopHint) {
+            dc.setColor(Graphics.COLOR_DK_GRAY, Graphics.COLOR_TRANSPARENT);
+            dc.drawText(cx, 310, Graphics.FONT_TINY, "Double press to stop", Graphics.TEXT_JUSTIFY_CENTER);
+        }
     }
 
     private function elapsedTime() as String {
