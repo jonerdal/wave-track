@@ -22,4 +22,6 @@ A 5-second interstitial screen reached by long-pressing during an Active session
 
 **Stop confirmation screen** — "Hold to stop" prompt. 5-second auto-cancel window.
 
-**Summary screen** — Shows total time and GPS distance. Saves the session on button press then exits. (GPS distance was 0 until v0.2.1 when GPS recording was fixed.)
+**Summary screen** — Shows total time and GPS distance. Saves the session on button press then exits. Back button enters the Discard Confirmation screen.
+
+**Discard Confirmation screen** — Warns the user that the activity will be deleted. Button press confirms discard and exits. Back button returns to the Summary screen.

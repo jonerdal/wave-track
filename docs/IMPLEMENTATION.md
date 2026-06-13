@@ -4,11 +4,21 @@ Wave Track is a Garmin activity used for wave surfing.
 
 This document is the working project board. Open it at the start of each session to see what's pending, in progress, and done. It also captures the "why it's shaped this way" for decisions that aren't obvious from the code.
 
-For domain vocabulary, see `CONTEXT.md`. For the app spec, see `SPEC.md`. For platform research, see `docs/RESEARCH.md`.
+For domain vocabulary, see `CONTEXT.md`. For the app spec, see `docs/SPEC.md`. For platform research, see `docs/RESEARCH.md`.
 
 ---
 
 ## Up Next
+
+### Fix summary screen layout
+
+**Problem:** Label text (e.g. "TOTAL TIME", "DISTANCE") is too small and the data values are too large, making the screen feel unbalanced.
+
+**What to do:** Adjust font sizes in `SummaryView.onUpdate()` — bump the label font up and reduce the data field font down until the hierarchy feels readable.
+
+**Files to change:** `SummaryView.mc`
+
+---
 
 ### More stats on summary screen
 
@@ -21,25 +31,6 @@ Useful candidates:
 - `averageSpeed` — average speed in m/s
 
 **Files to change:** `wave_trackApp.mc` (snapshot fields in `stopSession()`), `SummaryView.mc` (display them)
-
----
-
-### Save or delete on summary screen
-
-**Problem:** Summary screen only offers one action — save. No way to discard an accidental or GPS-poor session from the watch.
-
-**Proposed behaviour:** Two options: **Save** and **Delete**. Touch is acceptable here — session is over, screen is dry.
-
-**Implementation options:**
-
-- **Option A — Two touch targets:** Draw two labelled buttons (e.g. "Save" top half, "Delete" bottom half). Use `onTap()` in the delegate (requires switching from `BehaviorDelegate` to `InputDelegate` or adding a touch mixin).
-- **Option B — Physical button cycles, then confirms:** Single press cycles between Save and Delete (highlighted). Double press confirms. Consistent with the rest of the app.
-
-Option B is more consistent; Option A is faster to implement.
-
-**Discard API:** `ActivityRecording.Session.discard()` — call instead of `save()`. Then `System.exit()` as normal.
-
-**Files to change:** `SummaryView.mc`, `SummaryDelegate.mc`
 
 ---
 
@@ -108,6 +99,9 @@ wave_trackApp  ← session state (recordingSession, sessionStartTime, sessionEnd
 | Active | Stop confirmation | `switchToView` | Prevents ActiveView sitting under Summary with no clean removal path |
 | Stop confirmation (cancel) | Active | `switchToView` | Recreates ActiveView; safe because elapsed time recalculates from stored `sessionStartTime` |
 | Stop confirmation (confirm) | Summary | `switchToView` | Clean stack, no path back to a stopped session |
+| Summary | Discard confirmation | `switchToView` | Back button triggers discard flow |
+| Discard confirmation (cancel) | Summary | `switchToView` | User changed their mind |
+| Discard confirmation (confirm) | Exit | `System.exit()` | Terminates app after discard |
 | Summary | Exit | `System.exit()` | Terminates app after save |
 
 `pushView` was considered for Active → Stop confirmation (free back-button cancel) but rejected — the Venu 4S back button exits the app by default, and the view stack cleanup on confirm was non-trivial.
@@ -183,6 +177,12 @@ Trial-and-error results for `venu441mm` with SDK 9.1.0:
 ---
 
 ## Done
+
+### Discard activity from summary screen
+
+Back button on the Summary screen navigates to a new `DiscardConfirmationView`. Single press confirms discard (`recordingSession.discard()`) and exits. Back on the confirmation screen returns to Summary. No touch — button-only throughout.
+
+---
 
 ### GPS track recording + Garmin Connect map (v0.2.1)
 

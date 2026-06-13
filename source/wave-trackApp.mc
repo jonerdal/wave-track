@@ -61,6 +61,13 @@ class wave_trackApp extends Application.AppBase {
         }
     }
 
+    function discardSession() as Void {
+        if (recordingSession != null) {
+            recordingSession.discard();
+            recordingSession = null;
+        }
+    }
+
     private function buildSessionName() as String {
         var hour = System.getClockTime().hour;
         if (hour < 12) { return "Morning Surf"; }

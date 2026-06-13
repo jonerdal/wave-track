@@ -2,33 +2,33 @@ import Toybox.Lang;
 import Toybox.System;
 import Toybox.WatchUi;
 
-class SummaryDelegate extends WatchUi.BehaviorDelegate {
+class DiscardConfirmationDelegate extends WatchUi.BehaviorDelegate {
 
     function initialize() {
         BehaviorDelegate.initialize();
     }
 
     function onSelect() as Boolean {
-        getApp().saveSession();
+        getApp().discardSession();
         System.exit();
     }
 
     function onBack() as Boolean {
-        WatchUi.switchToView(new DiscardConfirmationView(), new DiscardConfirmationDelegate(), WatchUi.SLIDE_UP);
+        WatchUi.switchToView(new SummaryView(), new SummaryDelegate(), WatchUi.SLIDE_DOWN);
         return true;
     }
 
     function onMenu() as Boolean {
-        getApp().saveSession();
+        getApp().discardSession();
         System.exit();
     }
 
     function onNextPage() as Boolean {
-        return true; // consume swipe — no touch interaction
+        return true;
     }
 
     function onPreviousPage() as Boolean {
-        return true; // consume swipe — no touch interaction
+        return true;
     }
 
 }
