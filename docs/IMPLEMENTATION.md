@@ -28,14 +28,6 @@ Button-hint icons (green checkmark for save, red bin for discard) are currently 
 
 ---
 
-### Summary screen — research Garmin watch face layout patterns
-
-The summary screen layout is manually positioned with hardcoded percentage offsets. Before adding more stats (wave count, max speed, etc.), research how Garmin Connect IQ watch face apps handle dynamic, multi-field layouts — grid systems, font metrics, `dc.getFontHeight()`, and any layout utilities available in the SDK.
-
-**Starting point:** `docs/RESEARCH.md`, Garmin Connect IQ SDK docs.
-
----
-
 ### More stats on summary screen
 
 **Problem:** Summary screen shows total time and distance. Max speed and other session stats are in the FIT file but not displayed.
@@ -170,6 +162,14 @@ Trial-and-error results for `venu441mm` with SDK 9.1.0:
 ---
 
 ## Done
+
+### Research Garmin watch face / activity screen layout patterns
+
+Researched how Connect IQ apps handle dynamic, multi-field layouts and what makes Garmin's native activity screens look "anchored" vs. stacked text boxes: font-metric-driven spacing (`getFontHeight`/`getFontAscent`/`getTextDimensions`) instead of hardcoded percentages, circular safe-zone insets, `drawArc` accents/dividers that follow the bezel, half/full-width field rule, three-tier visual hierarchy, and AMOLED light-on-dark color with a single accent. Captured as a standing reference in `docs/DESIGN-RESEARCH.md` (device-adaptive, round-first, Venu 4S target), linked from `AGENTS.md`. Accent color seeded as teal-blue `0x00B5C2`.
+
+**Files changed:** `docs/DESIGN-RESEARCH.md` (new), `AGENTS.md`
+
+---
 
 ### Summary screen layout redesign
 

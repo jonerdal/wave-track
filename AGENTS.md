@@ -13,6 +13,7 @@ Open `docs/IMPLEMENTATION.md` first. It is the working project board — read th
 - `docs/SPEC.md` — product spec: what the app does and what it intentionally does not do.
 - `docs/IMPLEMENTATION.md` — working project board: Up Next, Architecture, Key Decisions, Done. Open this to see what to work on.
 - `docs/RESEARCH.md` — Connect IQ platform research and constraints discovered during build.
+- `docs/DESIGN-RESEARCH.md` — screen layout & design reference: principles, font metrics, round geometry, AMOLED color. Read before any UI/layout work.
 - `docs/adr/` — architecture decision records.
 
 ## Source
