@@ -30,7 +30,7 @@ class ActiveView extends WatchUi.View {
             _timer.stop();
             _timer = null;
         }
-        // GPS stays on — session is still recording through StopConfirmation
+        // GPS stays on — session keeps recording until stopSession()
     }
 
     function onPosition(info as Position.Info) as Void {
@@ -44,24 +44,21 @@ class ActiveView extends WatchUi.View {
     function onUpdate(dc as Dc) as Void {
         var cx = dc.getWidth() / 2;
 
-        dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_BLACK);
+        dc.setColor(Theme.HERO, Theme.BACKGROUND);
         dc.clear();
 
-        // Session name — small label at top
-        dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(cx, 55, Graphics.FONT_TINY, getApp().sessionName, Graphics.TEXT_JUSTIFY_CENTER);
+        // Session name hugs the top safe inset.
+        Layout.drawTopCaption(dc, getApp().sessionName);
 
-        // Elapsed time — large, center
-        dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(cx, 140, Graphics.FONT_NUMBER_HOT, elapsedTime(), Graphics.TEXT_JUSTIFY_CENTER);
-
-        // Current time of day — smaller, below
-        dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(cx, 255, Graphics.FONT_MEDIUM, currentTime(), Graphics.TEXT_JUSTIFY_CENTER);
+        // Centered group: elapsed-time hero (accent) over time of day.
+        var groupH = Layout.valueHeight(dc, Theme.FONT_HERO)
+                   + Layout.valueHeight(dc, Theme.FONT_VALUE);
+        var y = Layout.centerStart(dc, groupH);
+        y = Layout.drawValueBlock(dc, cx, y, elapsedTime(), Theme.ACCENT, Theme.FONT_HERO);
+        Layout.drawValueBlock(dc, cx, y, currentTime(), Theme.LABEL, Theme.FONT_VALUE);
 
         if (showStopHint) {
-            dc.setColor(Graphics.COLOR_DK_GRAY, Graphics.COLOR_TRANSPARENT);
-            dc.drawText(cx, 310, Graphics.FONT_TINY, "Double press to stop", Graphics.TEXT_JUSTIFY_CENTER);
+            Layout.drawBottomHint(dc, "Double press to stop");
         }
     }
 

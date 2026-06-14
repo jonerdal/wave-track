@@ -14,12 +14,11 @@ or rectangular screens — by deriving layout from the device at runtime instead
 
 ---
 
-## 1. Why the current screens read as "text boxes"
+## 1. Why naive screens read as "text boxes"
 
-The existing views (`SummaryView`, `ActiveView`, etc.) place everything with hardcoded
-vertical percentages (`h * 34 / 100`) or fixed pixels (`y = 140`) and treat a round screen
-as a rectangle. That produces evenly-stacked labels with no clear hierarchy and no
-relationship to the physical bezel.
+A screen that places everything with hardcoded vertical percentages (`h * 34 / 100`) or fixed
+pixels (`y = 140`), and treats a round screen as a rectangle, produces evenly-stacked labels
+with no clear hierarchy and no relationship to the physical bezel.
 
 Garmin's own activity screens (e.g. the Run app) feel "anchored" because they do four things:
 
@@ -184,24 +183,12 @@ Garmin's explicit AMOLED guidance:
 
 - **Light-on-dark.** Black/near-black background (every lit pixel costs battery).
 - **Gradients fade to black**, not bright solid fills.
-- **Color for accents only.** Use **one** accent — a surf **teal-blue**, currently
-  `0x00B5C2` (starting point, refine on device) — for the hero value *or* an accent arc,
-  not both, not everywhere.
-- White for hero/values, gray for labels.
+- **Color for accents only.** Use **one** accent color for the hero value *or* an accent arc,
+  not both, not everywhere. White for hero/values, gray for labels.
 - If you ever add an always-on / low-power state, honor burn-in rules
   (`requiresBurnInProtection`): thin fonts, move elements between frames, ≤10% pixels lit.
 
-Palette starting point (refine later):
-
-| Token | Value | Use |
-|---|---|---|
-| Background | `COLOR_BLACK` | screen fill |
-| Hero | `COLOR_WHITE` | primary number |
-| Value | `COLOR_WHITE` | secondary stats |
-| Label | `COLOR_LT_GRAY` / `COLOR_DK_GRAY` | captions |
-| Accent | Teal-blue `0x00B5C2` (starting point) | arc, hero highlight, status-good |
-| Warn / Discard | `COLOR_RED` | destructive hints |
-| Status good | `COLOR_GREEN` | GPS good, save hint |
+> WaveTrack's concrete palette and accent choice live in `docs/DESIGN.md` (the `Theme` module).
 
 ---
 
@@ -280,27 +267,10 @@ drawStat(dc, rightCx, rowY, "MAX SPD",  maxSp, Graphics.FONT_SMALL);
 
 ## 10. Applying it per view
 
-| View | Hero | Secondary | Geometry notes |
-|---|---|---|---|
-| Pre-session | App title / "Ready" | GPS status (color-coded), version | GPS status as a top-arc-aligned chip; Start hint at bottom curve. |
-| Active | Elapsed time (`FONT_NUMBER_HOT`) | Session name (top), time-of-day (below), HR later | Name hugs top arc; hero centered; stop hint on bottom arc. |
-| Summary | Elapsed time | Distance, max/avg speed, wave count as half-width columns | Accent arc + "SESSION COMPLETE" header up top; curved divider; save/discard icons inside the curve, vertically aligned to physical buttons. |
-| Discard confirm | Question text | — | Keep destructive (red) hint inside safe zone; large hit-clear hero question. |
-
-Target Summary layout sketch:
-
-```
-        ╭───────────────╮
-       ╱  accent arc      ╲     ← thin colored arc on top curve
-      │  SESSION COMPLETE  │    ← tiny gray caps, hugs top
-      │     1:24:06        │    ← hero: FONT_NUMBER_HOT, white
-      │   ───── arc ────   │    ← curved divider
-      │  3.20 km   18 kmh  │    ← two half-width stats:
-      │  DISTANCE  MAX SPD │      value over micro-label
-   ✓  │                    │  🗑  ← icons inside curve, aligned
-        ╲                 ╱        to physical button positions
-        ╰───────────────╯
-```
+How these principles map onto WaveTrack's specific screens — the per-view hero/secondary/
+geometry table, the Summary layout sketch, and the `Theme`/`Layout` modules that implement
+them — lives in **`docs/DESIGN.md`**. Keep this reference generic; record concrete per-view
+decisions there.
 
 ---
 

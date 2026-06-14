@@ -20,25 +20,23 @@ Trade-off: the current flow is fast but irreversible mid-press. The confirmation
 
 ## Up Next
 
+### Revisit Summary layout — too crowded
+
+The post-redesign Summary screen is functional but doesn't look great. Observed on device/sim:
+- Fonts/text are too big overall — the `FONT_NUMBER_HOT` time hero plus divider plus the two stat columns is too much for the round face.
+- The centered stat group **overlaps the save/discard hint icons** (green checkmark, red bin) on the right edge.
+
+Not solving now — parked as good-enough. When revisited, levers (see `docs/DESIGN.md`): drop the Summary hero from `Theme.FONT_HERO` to `Theme.FONT_VALUE`; shrink the column values; and/or narrow the centered group / reserve horizontal room so it can't collide with the button icons. The icons are hardware-anchored (Venu 4S side buttons), so the stats should yield, not the icons.
+
+**Files to change:** `SummaryView.mc` (likely `Theme.mc`/`Layout.mc` if the fix generalizes)
+
+---
+
 ### Summary screen — replace drawn icons with SVG bitmaps
 
 Button-hint icons (green checkmark for save, red bin for discard) are currently drawn programmatically with `setPenWidth` / `drawLine`. The intended approach is to load them from SVG bitmap assets via `WatchUi.loadResource()` / `dc.drawBitmap()`. SVG files (`check_icon.svg`, `bin_icon.svg`, 30×30px) already exist in `resources/drawables/` and are registered in `drawables.xml`. Blocked on resolving the correct Monkey C type for the loaded resource — previous attempts with `BitmapResource?` type annotations failed silently.
 
 **Files to change:** `SummaryView.mc`
-
----
-
-### More stats on summary screen
-
-**Problem:** Summary screen shows total time and distance. Max speed and other session stats are in the FIT file but not displayed.
-
-**What's available:** `Activity.getActivityInfo()` exposes these fields during an active session. Snapshot them in `stopSession()` alongside `elapsedDistance`, store on `wave_trackApp`, then display in `SummaryView.onUpdate()`.
-
-Useful candidates:
-- `maxSpeed` — peak speed in m/s; convert to km/h for display (`* 3.6`)
-- `averageSpeed` — average speed in m/s
-
-**Files to change:** `wave_trackApp.mc` (snapshot fields in `stopSession()`), `SummaryView.mc` (display them)
 
 ---
 
@@ -162,6 +160,16 @@ Trial-and-error results for `venu441mm` with SDK 9.1.0:
 ---
 
 ## Done
+
+### Align all views with the design reference
+
+Introduced `source/Theme.mc` (color + font-role tokens) and `source/Layout.mc` (font-metric-driven, round-only layout helpers: safe inset, top caption / bottom hint, value/stat blocks, half-width columns, divider, plus matching measurement helpers for centering). All four views (`PreSessionView`, `ActiveView`, `SummaryView`, `DiscardConfirmationView`) were rebuilt on a single shared skeleton — top caption / centered stack / bottom hint — with no hardcoded pixel coordinates. The teal-blue accent (`0x00B5C2`) is applied only to the elapsed-time hero on Active and Summary; decorative/accent arcs were deliberately deferred. Summary now shows Max Speed (km/h) beside Distance as half-width columns; `stopSession()` snapshots both `maxSpeed` and `averageSpeed` (avg stored but not shown — it's noise for surf sessions). Decisions captured in `docs/DESIGN.md`; `docs/DESIGN-RESEARCH.md` trimmed to stay generic.
+
+**Files changed:** `source/Theme.mc` (new), `source/Layout.mc` (new), `source/wave-trackView.mc`, `source/ActiveView.mc`, `source/SummaryView.mc`, `source/DiscardConfirmationView.mc`, `source/wave-trackApp.mc`, `docs/DESIGN.md` (new), `docs/DESIGN-RESEARCH.md`, `AGENTS.md`, `CONTEXT.md`
+
+This supersedes the earlier "Summary screen layout redesign" below. The two overlapping Up Next items folded in: "More stats on summary screen" (done) and "replace drawn icons with SVG bitmaps" (still separate/blocked).
+
+---
 
 ### Research Garmin watch face / activity screen layout patterns
 

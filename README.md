@@ -12,7 +12,7 @@ The Venu 4S has no native surfing activity. The workaround, starting a SUP sessi
 - Auto-names the activity by time of day: Morning / Afternoon / Evening Surf
 - Button-only interaction, no touch (screen is wet, hands are wet)
 - Double press the action button to stop
-- Summary screen shows total time and distance before saving
+- Summary screen recaps the session before saving
 
 ## Requirements
 

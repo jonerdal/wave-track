@@ -6,7 +6,7 @@ import Toybox.WatchUi;
 class PreSessionView extends WatchUi.View {
 
     private var _gpsStatus as String = "GPS: Searching";
-    private var _gpsColor as Number = Graphics.COLOR_LT_GRAY;
+    private var _gpsColor as Number = Theme.LABEL;
 
     function initialize() {
         View.initialize();
@@ -27,35 +27,33 @@ class PreSessionView extends WatchUi.View {
         var acc = info.accuracy;
         if (acc == null || acc <= Position.QUALITY_LAST_KNOWN) {
             _gpsStatus = "GPS: Searching";
-            _gpsColor = Graphics.COLOR_LT_GRAY;
+            _gpsColor = Theme.LABEL;
         } else if (acc < Position.QUALITY_USABLE) {
             _gpsStatus = "GPS: Weak";
-            _gpsColor = Graphics.COLOR_YELLOW;
+            _gpsColor = Theme.CAUTION;
         } else {
             _gpsStatus = "GPS: Good";
-            _gpsColor = Graphics.COLOR_GREEN;
+            _gpsColor = Theme.GOOD;
         }
         WatchUi.requestUpdate();
     }
 
     function onUpdate(dc as Dc) as Void {
         var cx = dc.getWidth() / 2;
-        var cy = dc.getHeight() / 2;
 
-        dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_BLACK);
+        dc.setColor(Theme.HERO, Theme.BACKGROUND);
         dc.clear();
 
-        dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(cx, 90, Graphics.FONT_MEDIUM, "WaveTrack", Graphics.TEXT_JUSTIFY_CENTER);
+        Layout.drawTopCaption(dc, "WAVETRACK");
 
-        dc.setColor(_gpsColor, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(cx, cy - 20, Graphics.FONT_SMALL, _gpsStatus, Graphics.TEXT_JUSTIFY_CENTER);
+        // Centered group: GPS status (color-coded) over the start prompt.
+        var groupH = Layout.valueHeight(dc, Theme.FONT_VALUE_SMALL)
+                   + Layout.valueHeight(dc, Theme.FONT_VALUE_SMALL);
+        var y = Layout.centerStart(dc, groupH);
+        y = Layout.drawValueBlock(dc, cx, y, _gpsStatus, _gpsColor, Theme.FONT_VALUE_SMALL);
+        Layout.drawValueBlock(dc, cx, y, "Press to start", Theme.VALUE, Theme.FONT_VALUE_SMALL);
 
-        dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(cx, cy + 30, Graphics.FONT_SMALL, "Press to start", Graphics.TEXT_JUSTIFY_CENTER);
-
-        dc.setColor(Graphics.COLOR_DK_GRAY, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(cx, dc.getHeight() - 30, Graphics.FONT_TINY, "v" + VERSION, Graphics.TEXT_JUSTIFY_CENTER);
+        Layout.drawBottomHint(dc, "v" + VERSION);
     }
 
 }

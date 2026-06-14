@@ -13,6 +13,8 @@ class wave_trackApp extends Application.AppBase {
     var sessionStartTime as Time.Moment? = null;
     var sessionEndTime as Time.Moment? = null;
     var sessionDistanceMeters as Float = 0.0f;
+    var sessionMaxSpeed as Float = 0.0f;      // m/s, snapshotted at stop
+    var sessionAvgSpeed as Float = 0.0f;      // m/s, snapshotted at stop (not yet displayed)
     var sessionName as String = "";
 
     function initialize() {
@@ -46,8 +48,16 @@ class wave_trackApp extends Application.AppBase {
             Position.enableLocationEvents(Position.LOCATION_DISABLE, method(:onPosition));
             sessionEndTime = Time.now();
             var info = Activity.getActivityInfo();
-            if (info != null && info.elapsedDistance != null) {
-                sessionDistanceMeters = info.elapsedDistance;
+            if (info != null) {
+                if (info.elapsedDistance != null) {
+                    sessionDistanceMeters = info.elapsedDistance;
+                }
+                if (info.maxSpeed != null) {
+                    sessionMaxSpeed = info.maxSpeed;
+                }
+                if (info.averageSpeed != null) {
+                    sessionAvgSpeed = info.averageSpeed;
+                }
             }
         }
     }
