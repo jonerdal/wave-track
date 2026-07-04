@@ -155,6 +155,14 @@ Trial-and-error results for `venu441mm` with SDK 9.1.0:
 
 ## Done
 
+### Max Speed written to the FIT file as a developer field
+
+Garmin Connect's native surf fields (Top Speed, Surfing Time, Longest Wave, Total Waves) can't be populated by CIQ apps — Connect ignores `:nativeNum` overrides, and the wave fields would additionally need v2 wave detection (research + links in `docs/RESEARCH.md`). Instead, max speed is now written as a FitContributor developer field on the session message (`km/h`, one decimal), shown in the Connect IQ section of the activity page. Field is created in `startSession()`, value set once in `stopSession()` from the same `sessionMaxSpeed` snapshot the Summary screen uses. Added the `FitContributor` permission to `manifest.xml`. **Needs on-device verification**: known forum reports of some devices not writing CIQ session-message fields — if the field is missing in Connect, fall back to periodic `setData()` during recording.
+
+**Files changed:** `wave-trackApp.mc`, `manifest.xml`, `resources/fitContributions.xml` (new), `resources/strings/strings.xml`
+
+---
+
 ### Summary screen — SVG bitmap button-hint icons, enlarged
 
 Replaced the programmatically drawn checkmark/bin hint icons on Summary with the existing SVG bitmaps (`check_icon.svg`, `bin_icon.svg`), bumped from 30×30 to 40×40 (vs ~25px for the old glyphs). The earlier type blocker resolved: cast `WatchUi.loadResource()` to `Graphics.BitmapType` (not `BitmapResource?`) — SVG-sourced bitmaps may load as `BitmapReference` on newer devices, and `dc.drawBitmap()` accepts the union type. Bitmaps are centered where the old glyphs' visual centers were, so they still point at the physical buttons. Known trade-off: the extra ~15px width slightly worsens the stat-group overlap tracked under "Revisit Summary layout".

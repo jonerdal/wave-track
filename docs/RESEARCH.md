@@ -62,6 +62,26 @@ Garmin's built-in surf activity is restricted on 5ATM watches — their official
 
 ---
 
+## Garmin Connect surf fields & FIT developer fields
+
+Researched July 2026, prompted by "Top Speed" (and Surfing Time / Longest Wave / Total Waves) showing empty on WaveTrack activities in Garmin Connect.
+
+### Why the native surf fields are empty
+
+The surf-specific fields on a Garmin Connect surfing activity page — Total Waves, Longest Wave, Surf Time, Top Speed — are populated by Garmin's **native surf activity profile**, which does on-device wave detection and writes surf-specific FIT data. A Connect IQ app produces a plain FIT recording and cannot fill those fields, even though the device tracks max speed (`Activity.getActivityInfo().maxSpeed` is available on-watch — WaveTrack shows it on the Summary screen).
+
+The SDK's escape hatch, `:nativeNum` on [`Session.createField()`](https://developer.garmin.com/connect-iq/api-docs/Toybox/FitContributor.html) (mapping a developer field onto a native FIT field number), **is deliberately not honored by Garmin Connect**. A Garmin rep confirmed in [this forum thread](https://forums.garmin.com/developer/connect-iq/f/discussion/4854/fitcontributor-nativenum-functionality): *"I agree that it is odd we have the feature in the SDK, but do not support it on Garmin Connect."* Some third-party consumers (e.g. Strava) do honor it, but the FIT spec then expects the developer field's data to be unit-equivalent to the native field (session `max_speed` is m/s), which would force the Connect-visible value into m/s. WaveTrack skips `:nativeNum` and stores km/h for readable display.
+
+Wave-derived fields (Surfing Time, Longest Wave, Total Waves) are doubly out of reach: they'd also require wave detection, parked as v2 in `IMPLEMENTATION.md`. Existing store surf apps hit the same wall — see the [Surf Tracker showcase thread](https://forums.garmin.com/developer/connect-iq/f/showcase/521/data-field-surf-tracker), where the question of setting native surf fields went unanswered.
+
+### What works: FitContributor developer fields
+
+[`Toybox.FitContributor`](https://developer.garmin.com/connect-iq/api-docs/Toybox/FitContributor.html) lets the app write custom fields into the FIT file. A field created with `:mesgType => MESG_TYPE_SESSION` and declared in a `fitContributions` resource with `displayInActivitySummary="true"` appears on the Garmin Connect activity page in the app's own **Connect IQ section** (with label and units) — not in the greyed-out native slot, but visible. Requires the `FitContributor` permission in `manifest.xml`.
+
+Caveat from the forums: some devices have had issues writing CIQ session-message fields; and the session field's value is whatever was last `setData()` before `save()`. WaveTrack sets it once in `stopSession()`. If the field doesn't appear on the Venu 4S, the fallback is calling `setData()` periodically during recording instead.
+
+---
+
 ## Development Workflow
 
 ### Toolchain
@@ -136,6 +156,7 @@ The Venu 4S enforces a hard cap on simultaneous `Timer.Timer` instances. Exceedi
 | Simulator cannot replicate real sensor data | Physical ocean testing required for sensor-dependent features |
 | Device manifest must list each target explicitly | Start with Venu 4S only |
 | Max ~2 concurrent timers on Venu 4S | Sequential timer reuse required when multiple timed events overlap |
+| Native surf fields (Top Speed, waves) not writable by CIQ | Max speed exposed as a FitContributor developer field instead; Connect ignores `:nativeNum` |
 
 ---
 
