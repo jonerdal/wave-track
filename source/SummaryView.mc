@@ -5,8 +5,15 @@ import Toybox.WatchUi;
 
 class SummaryView extends WatchUi.View {
 
+    private const ICON_SIZE = 40;
+
+    private var _checkIcon as Graphics.BitmapType;
+    private var _binIcon as Graphics.BitmapType;
+
     function initialize() {
         View.initialize();
+        _checkIcon = WatchUi.loadResource(Rez.Drawables.CheckIcon) as Graphics.BitmapType;
+        _binIcon = WatchUi.loadResource(Rez.Drawables.BinIcon) as Graphics.BitmapType;
     }
 
     function onLayout(dc as Dc) as Void {
@@ -38,29 +45,11 @@ class SummaryView extends WatchUi.View {
         Layout.drawColumns(dc, y, "DISTANCE", distance(), "MAX SPEED", maxSpeed(), Theme.VALUE, Theme.FONT_VALUE_SMALL);
 
         // Button-hint icons hug the right edge, aligned to the Venu 4S side buttons
-        // (upper = save, lower = discard). Positions track hardware, not layout.
-        var iconX = w - Layout.margin(dc) - 25;
-        drawCheckmark(dc, iconX, (h * 0.20).toNumber());
-        drawBinIcon(dc, iconX, (h * 0.66).toNumber());
-    }
-
-    private function drawCheckmark(dc as Dc, x as Number, y as Number) as Void {
-        dc.setColor(Theme.GOOD, Graphics.COLOR_TRANSPARENT);
-        dc.setPenWidth(4);
-        dc.drawLine(x + 2, y + 14, x + 10, y + 22);
-        dc.drawLine(x + 10, y + 22, x + 25, y + 4);
-        dc.setPenWidth(1);
-    }
-
-    private function drawBinIcon(dc as Dc, x as Number, y as Number) as Void {
-        dc.setColor(Theme.WARN, Graphics.COLOR_TRANSPARENT);
-        dc.setPenWidth(3);
-        dc.drawLine(x + 9, y + 1, x + 17, y + 1);   // handle
-        dc.drawLine(x + 3, y + 5, x + 23, y + 5);   // lid
-        dc.drawLine(x + 6, y + 8, x + 6, y + 24);   // left wall
-        dc.drawLine(x + 20, y + 8, x + 20, y + 24); // right wall
-        dc.drawLine(x + 6, y + 24, x + 20, y + 24); // base
-        dc.setPenWidth(1);
+        // (upper = save, lower = discard). Positions track hardware, not layout;
+        // bitmaps are centered where the old 25px glyphs' centers were.
+        var iconX = w - Layout.margin(dc) - ICON_SIZE;
+        dc.drawBitmap(iconX, (h * 0.20).toNumber() + 13 - ICON_SIZE / 2, _checkIcon);
+        dc.drawBitmap(iconX, (h * 0.66).toNumber() + 13 - ICON_SIZE / 2, _binIcon);
     }
 
     private function elapsedTime() as String {

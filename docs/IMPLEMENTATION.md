@@ -34,14 +34,6 @@ Not solving now — parked as good-enough. When revisited, levers (see `docs/DES
 
 ---
 
-### Summary screen — replace drawn icons with SVG bitmaps
-
-Button-hint icons (green checkmark for save, red bin for discard) are currently drawn programmatically with `setPenWidth` / `drawLine`. The intended approach is to load them from SVG bitmap assets via `WatchUi.loadResource()` / `dc.drawBitmap()`. SVG files (`check_icon.svg`, `bin_icon.svg`, 30×30px) already exist in `resources/drawables/` and are registered in `drawables.xml`. Blocked on resolving the correct Monkey C type for the loaded resource — previous attempts with `BitmapResource?` type annotations failed silently.
-
-**Files to change:** `SummaryView.mc`
-
----
-
 ### Timer update frequency and battery usage
 
 **Investigation needed:** Test a full-length (~2h) session on device. The Venu 4S rated GPS battery life is ~20 hours so this is likely a non-issue, but worth confirming once before closing.
@@ -162,6 +154,14 @@ Trial-and-error results for `venu441mm` with SDK 9.1.0:
 ---
 
 ## Done
+
+### Summary screen — SVG bitmap button-hint icons, enlarged
+
+Replaced the programmatically drawn checkmark/bin hint icons on Summary with the existing SVG bitmaps (`check_icon.svg`, `bin_icon.svg`), bumped from 30×30 to 40×40 (vs ~25px for the old glyphs). The earlier type blocker resolved: cast `WatchUi.loadResource()` to `Graphics.BitmapType` (not `BitmapResource?`) — SVG-sourced bitmaps may load as `BitmapReference` on newer devices, and `dc.drawBitmap()` accepts the union type. Bitmaps are centered where the old glyphs' visual centers were, so they still point at the physical buttons. Known trade-off: the extra ~15px width slightly worsens the stat-group overlap tracked under "Revisit Summary layout".
+
+**Files changed:** `SummaryView.mc`, `check_icon.svg`, `bin_icon.svg`
+
+---
 
 ### Disable touch on all screens (root cause of mid-session terminations)
 
