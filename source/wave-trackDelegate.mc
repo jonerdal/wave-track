@@ -1,29 +1,34 @@
 import Toybox.Lang;
 import Toybox.WatchUi;
 
-class PreSessionDelegate extends WatchUi.BehaviorDelegate {
+// InputDelegate, not BehaviorDelegate: a screen tap must never start
+// a session — physical buttons only (see ADR 0001).
+class PreSessionDelegate extends WatchUi.InputDelegate {
 
     function initialize() {
-        BehaviorDelegate.initialize();
+        InputDelegate.initialize();
     }
 
-    function onSelect() as Boolean {
-        getApp().startSession();
-        var activeView = new ActiveView();
-        WatchUi.switchToView(activeView, new ActiveDelegate(activeView), WatchUi.SLIDE_LEFT);
+    function onKey(keyEvent as WatchUi.KeyEvent) as Boolean {
+        if (keyEvent.getKey() == WatchUi.KEY_ENTER) {
+            getApp().startSession();
+            var activeView = new ActiveView();
+            WatchUi.switchToView(activeView, new ActiveDelegate(activeView), WatchUi.SLIDE_LEFT);
+            return true;
+        }
+        return false; // let back exit the app from the pre-session screen
+    }
+
+    function onTap(clickEvent) as Boolean {
         return true;
     }
 
-    function onMenu() as Boolean {
-        return true; // consume long press on pre-session screen
+    function onHold(clickEvent) as Boolean {
+        return true;
     }
 
-    function onNextPage() as Boolean {
-        return true; // consume swipe — no touch interaction
-    }
-
-    function onPreviousPage() as Boolean {
-        return true; // consume swipe — no touch interaction
+    function onSwipe(swipeEvent) as Boolean {
+        return true;
     }
 
 }

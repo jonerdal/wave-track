@@ -2,18 +2,27 @@ import Toybox.Lang;
 import Toybox.Timer;
 import Toybox.WatchUi;
 
-class ActiveDelegate extends WatchUi.BehaviorDelegate {
+// InputDelegate, not BehaviorDelegate: taps must never map to onSelect —
+// water on the touchscreen was stopping sessions mid-surf (see ADR 0001).
+class ActiveDelegate extends WatchUi.InputDelegate {
 
     private var _view as ActiveView;
     private var _waitingForSecondPress as Boolean = false;
     private var _doublePressTimer as Timer.Timer?;
 
     function initialize(view as ActiveView) {
-        BehaviorDelegate.initialize();
+        InputDelegate.initialize();
         _view = view;
     }
 
-    function onSelect() as Boolean {
+    function onKey(keyEvent as WatchUi.KeyEvent) as Boolean {
+        if (keyEvent.getKey() == WatchUi.KEY_ENTER) {
+            onStopPress();
+        }
+        return true; // consume all keys — back is blocked while recording
+    }
+
+    private function onStopPress() as Void {
         if (_waitingForSecondPress) {
             cancelTimer();
             _view.showStopHint = false;
@@ -29,7 +38,6 @@ class ActiveDelegate extends WatchUi.BehaviorDelegate {
             _view.showStopHint = true;
             WatchUi.requestUpdate();
         }
-        return true;
     }
 
     // Phase 1: double-press window closed — reuse timer for remaining hint duration
@@ -46,19 +54,15 @@ class ActiveDelegate extends WatchUi.BehaviorDelegate {
         WatchUi.requestUpdate();
     }
 
-    function onBack() as Boolean {
-        return true; // block back button — session is recording
-    }
-
-    function onMenu() as Boolean {
-        return true; // consume long press
-    }
-
-    function onNextPage() as Boolean {
+    function onTap(clickEvent) as Boolean {
         return true;
     }
 
-    function onPreviousPage() as Boolean {
+    function onHold(clickEvent) as Boolean {
+        return true;
+    }
+
+    function onSwipe(swipeEvent) as Boolean {
         return true;
     }
 

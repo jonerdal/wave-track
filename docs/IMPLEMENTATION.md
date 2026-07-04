@@ -14,7 +14,9 @@ For domain vocabulary, see `CONTEXT.md`. For the app spec, see `docs/SPEC.md`. F
 
 Currently a double-press on the action button stops the session immediately and goes straight to Summary. An alternative: single press opens a "Stop session?" confirmation screen, double-press there confirms and saves, back button returns to the active recording.
 
-Trade-off: the current flow is fast but irreversible mid-press. The confirmation step adds safety but an extra screen. Worth revisiting once there's more real-world usage to know whether accidental stops are actually a problem.
+Trade-off: the current flow is fast but irreversible mid-press. The confirmation step adds safety but an extra screen.
+
+**2026-07-04 update:** Real-world sessions did terminate mid-surf, but the root cause was touch, not the double press: `ActiveDelegate` extended `BehaviorDelegate`, which maps screen taps to `onSelect` — water on the touchscreen produced phantom double-presses (user confirmed a stop with no button contact). Fixed by switching all delegates to `InputDelegate` (see Done). Confirmation step stays parked until a water re-test shows the *physical* double press also misfires. If built: note the simulator can't test long press, a 5s hold needs hand-rolled `onKeyPressed`/`onKeyReleased`, and long holds may collide with Venu OS button shortcuts.
 
 ---
 
@@ -160,6 +162,14 @@ Trial-and-error results for `venu441mm` with SDK 9.1.0:
 ---
 
 ## Done
+
+### Disable touch on all screens (root cause of mid-session terminations)
+
+Sessions were terminating mid-surf with no button press. Cause: `ActiveDelegate`, `PreSessionDelegate`, and `DiscardConfirmationDelegate` all extended `BehaviorDelegate`, which maps screen taps to `onSelect` — water on the touchscreen generated phantom taps, and two within 400ms stopped the session. Same bug class as the earlier Summary-screen fix. All three switched to `InputDelegate` with physical buttons wired via `onKey` (`KEY_ENTER` / `KEY_ESC`); `onTap`/`onHold`/`onSwipe` consumed. Also dropped `DiscardConfirmationDelegate.onMenu()` → discard (a long-press discard was another accidental-trigger vector). Back button still exits the app from Pre-session, is blocked on Active, and returns to Summary from Discard Confirmation. Enforces ADR 0001 app-wide.
+
+**Files changed:** `ActiveDelegate.mc`, `wave-trackDelegate.mc`, `DiscardConfirmationDelegate.mc`
+
+---
 
 ### Align all views with the design reference
 
